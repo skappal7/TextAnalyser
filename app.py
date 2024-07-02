@@ -224,7 +224,7 @@ def app3():
 
 # Cover page with login
 def cover_page():
-    st.title("Welcome to RevAI Fusion 360")
+    st.title("Welcome to RevAI Fusion 360 💽")
     st.subheader("Please login to continue")
 
     # Login form
