@@ -218,17 +218,6 @@ def app3():
     else:
         st.info("Please upload a CSV file to analyze.")
 
-# Navigation
-st.sidebar.title('Navigation')
-app_selection = st.sidebar.radio('Go to', ['Review Scraper', 'Review Labeler', 'Text2Insights'])
-
-if app_selection == 'Review Scraper':
-    app1()
-elif app_selection == 'Review Labeler':
-    app2()
-elif app_selection == 'Text2Insights':
-    app3()
-
 # Helper Functions for App1
 def scrape_google_play(app_id, num_reviews=100, sort_order=Sort.NEWEST, min_rating=None, max_rating=None):
     all_reviews = []
@@ -409,6 +398,17 @@ def categorize_review(review):
     # If no keywords found, return "Unknown"
     return "Unknown"
 
+# Main function to run the app
+def main():
+    st.sidebar.title('Navigation')
+    app_selection = st.sidebar.radio('Go to', ['Review Scraper', 'Review Labeler', 'Text2Insights'])
+
+    if app_selection == 'Review Scraper':
+        app1()
+    elif app_selection == 'Review Labeler':
+        app2()
+    elif app_selection == 'Text2Insights':
+        app3()
+
 if __name__ == '__main__':
     main()
-
