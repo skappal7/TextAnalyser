@@ -398,6 +398,24 @@ def categorize_review(review):
     # If no keywords found, return "Unknown"
     return "Unknown"
 
+# Cover page with login
+def cover_page():
+    st.title("Welcome to RevAI Fusion 360")
+    st.subheader("Please login to continue")
+
+    # Login form
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+
+    if st.button("Login"):
+        if username == "humach" and password == "password":
+            st.success("Login successful!")
+            return True
+        else:
+            st.error("Invalid username or password")
+            return False
+    return False
+    
 # Main function to run the app
 def main():
     st.sidebar.title('Navigation')
