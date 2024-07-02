@@ -1,3 +1,223 @@
+import streamlit as st
+import pandas as pd
+import time
+from google_play_scraper import Sort, reviews as gp_reviews, app as gp_app
+import re
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.probability import FreqDist
+from nltk.util import ngrams
+import altair as alt
+from collections import Counter
+from textblob import TextBlob
+import nltk
+nltk.download('stopwords')
+
+# Helper function to download data as CSV
+def download_csv(data, filename):
+    csv = data.to_csv(index=False)
+    st.download_button(
+        label="Download data as CSV",
+        data=csv,
+        file_name=filename,
+        mime='text/csv',
+    )
+
+# App 1: Google Play Store Review Scraper
+def app1():
+    st.title('Google Play Store Review Scraper')
+
+    st.write("To find the app ID, go to the Google Play Store, search for the app, and copy the part of the URL after `id=` (e.g., for `https://play.google.com/store/apps/details?id=com.example.app`, the app ID is `com.example.app`).")
+    st.write("[Click here for a guide on how to find the Google Play Store app ID](https://www.sociablekit.com/how-to-find-google-play-app-id/)")
+
+    app_id = st.text_input('Enter the Google Play App ID:')
+    num_reviews = st.slider('Select number of reviews to scrape', min_value=1, max_value=1000, step=1, value=100)
+    sort_order = st.selectbox('Select the sort order of the reviews', ['Newest', 'Rating'])
+    sort_order_map = {'Newest': Sort.NEWEST, 'Rating': Sort.RATING}
+    sort_order_selected = sort_order_map[sort_order]
+
+    min_rating, max_rating = None, None
+    if sort_order_selected == Sort.RATING:
+        min_rating, max_rating = st.slider('Select the rating range', min_value=1, max_value=5, value=(1, 5))
+
+    if st.button('Scrape Reviews'):
+        reviews = scrape_google_play(app_id, num_reviews, sort_order_selected, min_rating, max_rating)
+        if reviews:
+            app_details = fetch_google_play_app_details(app_id)
+            st.write(f"App Title: {app_details['title']}")
+            st.write(f"Installs: {app_details['installs']}")
+            st.write(f"Average Rating: {app_details['score']}")
+            st.write(f"Total Ratings: {app_details['ratings']}")
+            st.write(f"Total Reviews: {app_details['reviews']}")
+            st.write(f"Description: {app_details['description']}")
+            st.write(f"Scraped {len(reviews)} reviews for App ID {app_id}")
+            reviews_df = pd.DataFrame(reviews, columns=['Review'])
+            st.dataframe(reviews_df)
+            download_csv(reviews_df, 'google_play_reviews.csv')
+        else:
+            st.write("No reviews found or unable to scrape.")
+    
+    st.write("Note: Scraping reviews from certain websites may violate their terms of service. Use responsibly and ensure compliance with the website's policies.")
+
+# App 2: Review Labeling and Categorization App
+def app2():
+    st.title('Review Labeling and Categorization App')
+
+    uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+
+    if uploaded_file is not None:
+        reviews_df = pd.read_csv(uploaded_file)
+
+        # Convert the 'Review' column to string data type
+        reviews_df['Review'] = reviews_df['Review'].astype(str)
+
+        # Apply the classify_review function to the 'Review' column
+        reviews_df['Label'] = reviews_df['Review'].apply(classify_review)
+
+        # Apply the categorize_review function to the 'Review' column
+        reviews_df['Category'] = reviews_df['Review'].apply(categorize_review)
+
+        # Display the labeled and categorized reviews
+        st.write(reviews_df)
+
+        # Allow the user to download the labeled and categorized reviews
+        download_csv(reviews_df, 'labeled_categorized_reviews.csv')
+    else:
+        st.write("Please upload a CSV file to get started.")
+
+# App 3: Text and Sentiment Preliminary Analysis
+def app3():
+    st.title('Text and Sentiment Preliminary Analysis')
+
+    # Load stopwords
+    stop_words = set(stopwords.words('english'))
+
+    # Sidebar for file upload and input parameters
+    st.sidebar.header("Upload CSV File")
+    uploaded_file = st.sidebar.file_uploader("Choose a CSV file", type="csv")
+    exclude_words = st.sidebar.text_input("Words to Exclude (comma separated)", "")
+    min_freq = st.sidebar.number_input("Minimum Frequency", value=2, min_value=1)
+    max_words = st.sidebar.number_input("Maximum Words", value=200, min_value=1)
+
+    # Function to clean text
+    def clean_text(text):
+        if isinstance(text, str):
+            text = text.lower()
+            text = ''.join([c for c in text if c not in ('!', '.', ':', ',', '?')])
+            return text
+        else:
+            return ""
+
+    # Function to analyze text data
+    def analyze_text(data, column):
+        data[column] = data[column].apply(clean_text)
+        words = ' '.join(data[column]).split()
+        words = [word for word in words if word not in stop_words]
+        if exclude_words:
+            exclude = exclude_words.split(',')
+            words = [word for word in words if word not in exclude]
+        return words
+
+    # Function to perform sentiment analysis
+    def sentiment_analysis(data, column):
+        data['sentiment'] = data[column].apply(lambda x: TextBlob(x).sentiment.polarity if x else 0)
+        data['sentiment_type'] = data['sentiment'].apply(lambda x: 'Positive' if x > 0 else ('Negative' if x < 0 else 'Neutral'))
+        return data
+
+    # Plot word cloud
+    def plot_wordcloud(words):
+        wordcloud = WordCloud(width=800, height=400, max_words=max_words, background_color='white').generate(' '.join(words))
+        plt.figure(figsize=(10, 5))
+        plt.imshow(wordcloud, interpolation='bilinear')
+        plt.axis('off')
+        st.pyplot(plt)
+
+    # Plot sentiment analysis
+    def plot_sentiment(data):
+        sentiment_counts = data['sentiment_type'].value_counts().reset_index()
+        sentiment_counts.columns = ['sentiment', 'count']
+        chart = alt.Chart(sentiment_counts).mark_bar().encode(
+            x='sentiment',
+            y='count',
+            color='sentiment'
+        ).properties(
+            title="Sentiment Analysis"
+        )
+        st.altair_chart(chart, use_container_width=True)
+
+    # Plot n-grams
+    def plot_ngrams(words, n):
+        n_grams = ngrams(words, n)
+        n_grams_freq = FreqDist(n_grams).most_common(50)
+        n_grams_df = pd.DataFrame(n_grams_freq, columns=['ngram', 'count'])
+        n_grams_df['ngram'] = n_grams_df['ngram'].apply(lambda x: ' '.join(x))
+        chart = alt.Chart(n_grams_df).mark_bar().encode(
+            x=alt.X('ngram', sort='-y'),
+            y='count',
+            tooltip=['ngram', 'count']
+        ).properties(
+            title=f"Top 50 {'Bigrams' if n == 2 else 'Trigrams'}"
+        )
+        st.altair_chart(chart, use_container_width=True)
+
+    # Plot top positive and negative words
+    def plot_top_words(data, sentiment):
+        words = data[data['sentiment_type'] == sentiment]['Review'].str.cat(sep=' ').split()
+        words = [word for word in words if word not in stop_words]
+        words_freq = Counter(words).most_common(20)
+        words_df = pd.DataFrame(words_freq, columns=['word', 'count'])
+        chart = alt.Chart(words_df).mark_bar().encode(
+            x=alt.X('word', sort='-y'),
+            y='count',
+            color=alt.value('green' if sentiment == 'Positive' else 'red')
+        ).properties(
+            title=f"Top 20 {sentiment} Words"
+        )
+        st.altair_chart(chart, use_container_width=True)
+
+    # Main panel for displaying analysis
+    if uploaded_file is not None:
+        data = pd.read_csv(uploaded_file)
+        if 'Review' in data.columns:
+            words = analyze_text(data, 'Review')
+            sentiment_data = sentiment_analysis(data, 'Review')
+
+            tab1, tab2, tab3, tab4, tab5 = st.tabs(["Word Cloud", "Text Analytics", "Sentiment Analysis", "N-grams", "Top Words"])
+
+            with tab1:
+                st.header("Word Cloud")
+                plot_wordcloud(words)
+
+            with tab2:
+                st.header("Text Analytics")
+                text_freq = pd.DataFrame(FreqDist(words).most_common(), columns=['word', 'count'])
+                st.dataframe(text_freq)
+
+            with tab3:
+                st.header("Sentiment Analysis")
+                plot_sentiment(sentiment_data)
+                st.dataframe(sentiment_data[['Review', 'sentiment', 'sentiment_type']])
+
+            with tab4:
+                st.header("N-grams")
+                plot_ngrams(words, 2)
+                plot_ngrams(words, 3)
+
+            with tab5:
+                st.header("Top Words")
+                plot_top_words(sentiment_data, 'Positive')
+                plot_top_words(sentiment_data, 'Negative')
+
+            # Download button
+            csv = sentiment_data.to_csv(index=False).encode('utf-8')
+            st.download_button("Download Results", data=csv, file_name="results.csv", mime="text/csv")
+        else:
+            st.error("The uploaded CSV file does not contain a 'Review' column.")
+    else:
+        st.info("Please upload a CSV file to analyze.")
+
 # Navigation
 st.sidebar.title('Navigation')
 app_selection = st.sidebar.radio('Go to', ['Review Scraper', 'Review Labeler', 'Text2Insights'])
@@ -191,3 +411,4 @@ def categorize_review(review):
 
 if __name__ == '__main__':
     main()
+
