@@ -440,17 +440,27 @@ def categorize_review(review):
     return "Unknown"
 
 # Helper Functions for App4
+import os
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.firefox.service import Service as FirefoxService
+from selenium.webdriver.edge.service import Service as EdgeService
+import platform
+import streamlit as st
+
 def setup_driver(browser):
     try:
         driver_path = {
-            'Chrome': './drivers/chromedriver',
-            'Firefox': './drivers/geckodriver',
-            'Edge': './drivers/msedgedriver'
+            'Chrome': 'drivers/chromedriver',
+            'Firefox': 'drivers/geckodriver',
+            'Edge': 'drivers/msedgedriver'
         }
-        
+
         if browser == 'Chrome':
             options = webdriver.ChromeOptions()
             options.add_argument("--headless")  # Run in headless mode
+            options.add_argument("--no-sandbox")
+            options.add_argument("--disable-dev-shm-usage")
             service = ChromeService(executable_path=os.path.abspath(driver_path['Chrome']))
             driver = webdriver.Chrome(service=service, options=options)
         elif browser == 'Firefox':
@@ -467,14 +477,13 @@ def setup_driver(browser):
             driver = webdriver.Safari()  # SafariDriver is included with macOS
         else:
             raise ValueError("Unsupported browser or platform")
-        
+
         # Test if the driver is valid by getting a simple page
         driver.get("http://www.google.com")
         return driver
     except Exception as e:
         st.error(f"Error setting up the driver for {browser}: {str(e)}")
         return None
-
 
 
 def scrape_trustpilot_reviews(url, num_reviews=100, browser='Chrome'):
@@ -536,8 +545,6 @@ def scrape_yelp_reviews(url, num_reviews=100, browser='Chrome'):
     finally:
         driver.quit()
     return reviews[:num_reviews]
-
-
 
 def save_to_csv(dataframe):
     file_path = f'reviews_{int(time.time())}.csv'
