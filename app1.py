@@ -440,23 +440,28 @@ def categorize_review(review):
 
 # Helper Functions for App4
 def setup_driver(browser):
-    if browser == 'Chrome':
-        options = webdriver.ChromeOptions()
-        options.add_argument("--headless")  # Run in headless mode
-        driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
-    elif browser == 'Firefox':
-        options = webdriver.FirefoxOptions()
-        options.add_argument("--headless")  # Run in headless mode
-        driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()), options=options)
-    elif browser == 'Edge':
-        options = webdriver.EdgeOptions()
-        options.add_argument("--headless")  # Run in headless mode
-        driver = webdriver.Edge(service=EdgeService(EdgeChromiumDriverManager().install()), options=options)
-    elif browser == 'Safari' and platform.system() == 'Darwin':  # Check if macOS
-        driver = webdriver.Safari()  # SafariDriver is included with macOS
-    else:
-        raise ValueError("Unsupported browser or platform")
-    return driver
+    try:
+        if browser == 'Chrome':
+            options = webdriver.ChromeOptions()
+            options.add_argument("--headless")  # Run in headless mode
+            driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
+        elif browser == 'Firefox':
+            options = webdriver.FirefoxOptions()
+            options.add_argument("--headless")  # Run in headless mode
+            driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()), options=options)
+        elif browser == 'Edge':
+            options = webdriver.EdgeOptions()
+            options.add_argument("--headless")  # Run in headless mode
+            driver = webdriver.Edge(service=EdgeService(EdgeChromiumDriverManager().install()), options=options)
+        elif browser == 'Safari' and platform.system() == 'Darwin':  # Check if macOS
+            driver = webdriver.Safari()  # SafariDriver is included with macOS
+        else:
+            raise ValueError("Unsupported browser or platform")
+        return driver
+    except Exception as e:
+        st.error(f"Error setting up the driver for {browser}: {str(e)}")
+        return None
+
 
 def scrape_trustpilot_reviews(url, num_reviews=100, browser='Chrome'):
     driver = setup_driver(browser)
