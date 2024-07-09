@@ -457,14 +457,19 @@ def setup_driver(browser):
             driver = webdriver.Safari()  # SafariDriver is included with macOS
         else:
             raise ValueError("Unsupported browser or platform")
+        
+        # Test if the driver is valid by getting a simple page
+        driver.get("http://www.google.com")
         return driver
     except Exception as e:
         st.error(f"Error setting up the driver for {browser}: {str(e)}")
         return None
 
-
 def scrape_trustpilot_reviews(url, num_reviews=100, browser='Chrome'):
     driver = setup_driver(browser)
+    if driver is None:
+        st.error(f"Failed to set up the driver for {browser}. Cannot scrape reviews.")
+        return []
     driver.get(url)
     reviews = []
     try:
@@ -482,6 +487,9 @@ def scrape_trustpilot_reviews(url, num_reviews=100, browser='Chrome'):
 
 def scrape_pissedconsumer_reviews(url, num_reviews=100, browser='Chrome'):
     driver = setup_driver(browser)
+    if driver is None:
+        st.error(f"Failed to set up the driver for {browser}. Cannot scrape reviews.")
+        return []
     driver.get(url)
     reviews = []
     try:
@@ -499,6 +507,9 @@ def scrape_pissedconsumer_reviews(url, num_reviews=100, browser='Chrome'):
 
 def scrape_yelp_reviews(url, num_reviews=100, browser='Chrome'):
     driver = setup_driver(browser)
+    if driver is None:
+        st.error(f"Failed to set up the driver for {browser}. Cannot scrape reviews.")
+        return []
     driver.get(url)
     reviews = []
     try:
