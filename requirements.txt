@@ -6,3 +6,5 @@ matplotlib
 nltk
 altair
 textblob
+requests
+beautifulsoup4
