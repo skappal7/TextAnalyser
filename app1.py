@@ -13,8 +13,16 @@ import altair as alt
 from collections import Counter
 from textblob import TextBlob
 import nltk
-import requests
-from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.firefox.service import Service as FirefoxService
+from selenium.webdriver.edge.service import Service as EdgeService
+from selenium.webdriver.safari.service import Service as SafariService
+from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.firefox import GeckoDriverManager
+from webdriver_manager.microsoft import EdgeChromiumDriverManager
+import platform
 
 nltk.download('stopwords')
 
@@ -231,14 +239,15 @@ def app4():
     url = st.text_input('Enter the review page URL:')
     num_reviews = st.slider('Number of reviews to scrape', 1, 1000, 100)
     website = st.selectbox('Select website', ['Trustpilot', 'PissedConsumer', 'Yelp'])
+    browser = st.selectbox('Select browser', ['Chrome', 'Firefox', 'Edge', 'Safari'])
 
     if st.button('Scrape Reviews'):
         if website == 'Trustpilot':
-            reviews = scrape_trustpilot_reviews(url, num_reviews)
+            reviews = scrape_trustpilot_reviews(url, num_reviews, browser)
         elif website == 'PissedConsumer':
-            reviews = scrape_pissedconsumer_reviews(url, num_reviews)
+            reviews = scrape_pissedconsumer_reviews(url, num_reviews, browser)
         elif website == 'Yelp':
-            reviews = scrape_yelp_reviews(url, num_reviews)
+            reviews = scrape_yelp_reviews(url, num_reviews, browser)
 
         if reviews:
             reviews_df = pd.DataFrame(reviews, columns=['Review'])
@@ -430,34 +439,75 @@ def categorize_review(review):
     return "Unknown"
 
 # Helper Functions for App4
-def scrape_trustpilot_reviews(url, num_reviews=100):
-    headers = {"User-Agent": "Mozilla/5.0"}
-    response = requests.get(url, headers=headers)
-    soup = BeautifulSoup(response.content, 'html.parser')
-    reviews = []
-    for review in soup.find_all('p', class_='review-content__text')[:num_reviews]:
-        reviews.append(review.text.strip())
-    return reviews
+def setup_driver(browser):
+    if browser == 'Chrome':
+        options = webdriver.ChromeOptions()
+        options.add_argument("--headless")  # Run in headless mode
+        driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
+    elif browser == 'Firefox':
+        options = webdriver.FirefoxOptions()
+        options.add_argument("--headless")  # Run in headless mode
+        driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()), options=options)
+    elif browser == 'Edge':
+        options = webdriver.EdgeOptions()
+        options.add_argument("--headless")  # Run in headless mode
+        driver = webdriver.Edge(service=EdgeService(EdgeChromiumDriverManager().install()), options=options)
+    elif browser == 'Safari' and platform.system() == 'Darwin':  # Check if macOS
+        driver = webdriver.Safari()  # SafariDriver is included with macOS
+    else:
+        raise ValueError("Unsupported browser or platform")
+    return driver
 
-def scrape_pissedconsumer_reviews(url, num_reviews=100):
-    headers = {"User-Agent": "Mozilla/5.0"}
-    response = requests.get(url, headers=headers)
-    soup = BeautifulSoup(response.content, 'html.parser')
+def scrape_trustpilot_reviews(url, num_reviews=100, browser='Chrome'):
+    driver = setup_driver(browser)
+    driver.get(url)
     reviews = []
-    for review in soup.find_all('div', class_='complaint-review')[:num_reviews]:
-        review_text = review.find('p')
-        if review_text:
-            reviews.append(review_text.text.strip())
-    return reviews
+    try:
+        while len(reviews) < num_reviews:
+            review_elements = driver.find_elements(By.CSS_SELECTOR, 'p.review-content__text')
+            for element in review_elements:
+                reviews.append(element.text.strip())
+                if len(reviews) >= num_reviews:
+                    break
+            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            time.sleep(2)  # Wait for new reviews to load
+    finally:
+        driver.quit()
+    return reviews[:num_reviews]
 
-def scrape_yelp_reviews(url, num_reviews=100):
-    headers = {"User-Agent": "Mozilla/5.0"}
-    response = requests.get(url, headers=headers)
-    soup = BeautifulSoup(response.content, 'html.parser')
+def scrape_pissedconsumer_reviews(url, num_reviews=100, browser='Chrome'):
+    driver = setup_driver(browser)
+    driver.get(url)
     reviews = []
-    for review in soup.find_all('span', class_='raw__373c0__3rKqk')[:num_reviews]:
-        reviews.append(review.text.strip())
-    return reviews
+    try:
+        while len(reviews) < num_reviews:
+            review_elements = driver.find_elements(By.CSS_SELECTOR, 'div.complaint-review p')
+            for element in review_elements:
+                reviews.append(element.text.strip())
+                if len(reviews) >= num_reviews:
+                    break
+            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            time.sleep(2)  # Wait for new reviews to load
+    finally:
+        driver.quit()
+    return reviews[:num_reviews]
+
+def scrape_yelp_reviews(url, num_reviews=100, browser='Chrome'):
+    driver = setup_driver(browser)
+    driver.get(url)
+    reviews = []
+    try:
+        while len(reviews) < num_reviews:
+            review_elements = driver.find_elements(By.CSS_SELECTOR, 'span.raw__373c0__3rKqk')
+            for element in review_elements:
+                reviews.append(element.text.strip())
+                if len(reviews) >= num_reviews:
+                    break
+            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            time.sleep(2)  # Wait for new reviews to load
+    finally:
+        driver.quit()
+    return reviews[:num_reviews]
 
 def save_to_csv(dataframe):
     file_path = f'reviews_{int(time.time())}.csv'
