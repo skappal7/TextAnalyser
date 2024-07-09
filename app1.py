@@ -23,6 +23,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.firefox import GeckoDriverManager
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
 import platform
+import os
 
 nltk.download('stopwords')
 
@@ -441,20 +442,26 @@ def categorize_review(review):
 # Helper Functions for App4
 def setup_driver(browser):
     try:
+        driver_path = {
+            'Chrome': './drivers/chromedriver',
+            'Firefox': './drivers/geckodriver',
+            'Edge': './drivers/msedgedriver'
+        }
+        
         if browser == 'Chrome':
             options = webdriver.ChromeOptions()
             options.add_argument("--headless")  # Run in headless mode
-            service = ChromeService(executable_path='./drivers/chromedriver')
+            service = ChromeService(executable_path=os.path.abspath(driver_path['Chrome']))
             driver = webdriver.Chrome(service=service, options=options)
         elif browser == 'Firefox':
             options = webdriver.FirefoxOptions()
             options.add_argument("--headless")  # Run in headless mode
-            service = FirefoxService(executable_path='./drivers/geckodriver')
+            service = FirefoxService(executable_path=os.path.abspath(driver_path['Firefox']))
             driver = webdriver.Firefox(service=service, options=options)
         elif browser == 'Edge':
             options = webdriver.EdgeOptions()
             options.add_argument("--headless")  # Run in headless mode
-            service = EdgeService(executable_path='./drivers/msedgedriver')
+            service = EdgeService(executable_path=os.path.abspath(driver_path['Edge']))
             driver = webdriver.Edge(service=service, options=options)
         elif browser == 'Safari' and platform.system() == 'Darwin':  # Check if macOS
             driver = webdriver.Safari()  # SafariDriver is included with macOS
@@ -467,6 +474,7 @@ def setup_driver(browser):
     except Exception as e:
         st.error(f"Error setting up the driver for {browser}: {str(e)}")
         return None
+
 
 
 def scrape_trustpilot_reviews(url, num_reviews=100, browser='Chrome'):
