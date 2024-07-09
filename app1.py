@@ -444,15 +444,18 @@ def setup_driver(browser):
         if browser == 'Chrome':
             options = webdriver.ChromeOptions()
             options.add_argument("--headless")  # Run in headless mode
-            driver = webdriver.Chrome(executable_path='./drivers/chromedriver', options=options)
+            service = ChromeService(executable_path='./drivers/chromedriver')
+            driver = webdriver.Chrome(service=service, options=options)
         elif browser == 'Firefox':
             options = webdriver.FirefoxOptions()
             options.add_argument("--headless")  # Run in headless mode
-            driver = webdriver.Firefox(executable_path='./drivers/geckodriver', options=options)
+            service = FirefoxService(executable_path='./drivers/geckodriver')
+            driver = webdriver.Firefox(service=service, options=options)
         elif browser == 'Edge':
             options = webdriver.EdgeOptions()
             options.add_argument("--headless")  # Run in headless mode
-            driver = webdriver.Edge(executable_path='./drivers/msedgedriver', options=options)
+            service = EdgeService(executable_path='./drivers/msedgedriver')
+            driver = webdriver.Edge(service=service, options=options)
         elif browser == 'Safari' and platform.system() == 'Darwin':  # Check if macOS
             driver = webdriver.Safari()  # SafariDriver is included with macOS
         else:
@@ -464,6 +467,7 @@ def setup_driver(browser):
     except Exception as e:
         st.error(f"Error setting up the driver for {browser}: {str(e)}")
         return None
+
 
 def scrape_trustpilot_reviews(url, num_reviews=100, browser='Chrome'):
     driver = setup_driver(browser)
@@ -524,6 +528,7 @@ def scrape_yelp_reviews(url, num_reviews=100, browser='Chrome'):
     finally:
         driver.quit()
     return reviews[:num_reviews]
+
 
 
 def save_to_csv(dataframe):
