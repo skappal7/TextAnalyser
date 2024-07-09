@@ -465,6 +465,7 @@ def setup_driver(browser):
         st.error(f"Error setting up the driver for {browser}: {str(e)}")
         return None
 
+
 def scrape_trustpilot_reviews(url, num_reviews=100, browser='Chrome'):
     driver = setup_driver(browser)
     if driver is None:
@@ -524,6 +525,7 @@ def scrape_yelp_reviews(url, num_reviews=100, browser='Chrome'):
     finally:
         driver.quit()
     return reviews[:num_reviews]
+
 
 def save_to_csv(dataframe):
     file_path = f'reviews_{int(time.time())}.csv'
