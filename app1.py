@@ -14,9 +14,11 @@ from collections import Counter
 from textblob import TextBlob
 import nltk
 import asyncio
+import nest_asyncio
 from pyppeteer import launch
 
 nltk.download('stopwords')
+nest_asyncio.apply()
 
 # Initialize session state
 if 'logged_in' not in st.session_state:
@@ -31,6 +33,39 @@ def download_csv(data, filename):
         file_name=filename,
         mime='text/csv',
     )
+
+# Google Play Store Review Scraper
+def scrape_google_play(app_id, num_reviews=100, sort_order=Sort.NEWEST, min_rating=None, max_rating=None):
+    all_reviews = []
+    next_token = None
+    while len(all_reviews) < num_reviews:
+        current_reviews, token = gp_reviews(
+            app_id,
+            lang='en',
+            country='us',
+            sort=sort_order,
+            count=min(num_reviews - len(all_reviews), 100),
+            filter_score_with=None if min_rating is None and max_rating is None else list(range(min_rating, max_rating + 1)),
+            continuation_token=next_token
+        )
+        all_reviews.extend(current_reviews)
+        next_token = token
+        if not next_token:
+            break
+        time.sleep(2)  # Add delay to avoid rate limiting
+    reviews_text = [review['content'] for review in all_reviews]
+    return reviews_text
+
+def fetch_google_play_app_details(app_id):
+    app_details = gp_app(app_id)
+    return {
+        'title': app_details['title'],
+        'installs': app_details['installs'],
+        'score': app_details['score'],
+        'ratings': app_details['ratings'],
+        'reviews': app_details['reviews'],
+        'description': app_details['description']
+    }
 
 # App 1: Google Play Store Review Scraper
 def app1():
@@ -67,38 +102,6 @@ def app1():
             st.write("No reviews found or unable to scrape.")
     
     st.write("Note: Scraping reviews from certain websites may violate their terms of service. Use responsibly and ensure compliance with the website's policies.")
-
-def scrape_google_play(app_id, num_reviews=100, sort_order=Sort.NEWEST, min_rating=None, max_rating=None):
-    all_reviews = []
-    next_token = None
-    while len(all_reviews) < num_reviews:
-        current_reviews, token = gp_reviews(
-            app_id,
-            lang='en',
-            country='us',
-            sort=sort_order,
-            count=min(num_reviews - len(all_reviews), 100),
-            filter_score_with=None if min_rating is None and max_rating is None else list(range(min_rating, max_rating + 1)),
-            continuation_token=next_token
-        )
-        all_reviews.extend(current_reviews)
-        next_token = token
-        if not next_token:
-            break
-        time.sleep(2)  # Add delay to avoid rate limiting
-    reviews_text = [review['content'] for review in all_reviews]
-    return reviews_text
-
-def fetch_google_play_app_details(app_id):
-    app_details = gp_app(app_id)
-    return {
-        'title': app_details['title'],
-        'installs': app_details['installs'],
-        'score': app_details['score'],
-        'ratings': app_details['ratings'],
-        'reviews': app_details['reviews'],
-        'description': app_details['description']
-    }
 
 # App 2: Review Labeling and Categorization App
 def app2():
@@ -272,7 +275,6 @@ def categorize_review(review):
     # If no keywords found, return "Unknown"
     return "Unknown"
 
-# App 3: Text and Sentiment Preliminary Analysis
 def app3():
     st.title('Text and Sentiment Preliminary Analysis')
 
@@ -464,12 +466,14 @@ async def scrape_yelp_reviews(url, num_reviews=100):
     return reviews[:num_reviews]
 
 def scrape_reviews(url, num_reviews=100, site='Trustpilot'):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     if site == 'Trustpilot':
-        reviews = asyncio.run(scrape_trustpilot_reviews(url, num_reviews))
+        reviews = loop.run_until_complete(scrape_trustpilot_reviews(url, num_reviews))
     elif site == 'PissedConsumer':
-        reviews = asyncio.run(scrape_pissedconsumer_reviews(url, num_reviews))
+        reviews = loop.run_until_complete(scrape_pissedconsumer_reviews(url, num_reviews))
     elif site == 'Yelp':
-        reviews = asyncio.run(scrape_yelp_reviews(url, num_reviews))
+        reviews = loop.run_until_complete(scrape_yelp_reviews(url, num_reviews))
     else:
         reviews = []
     if not reviews:
@@ -492,7 +496,6 @@ def app4():
         else:
             st.error("Failed to scrape reviews.")
 
-# Cover page with login
 def cover_page():
     st.title("Welcome to RevAI Fusion 360 💽")
     st.subheader("Please login to continue")
@@ -508,7 +511,6 @@ def cover_page():
         else:
             st.error("Invalid username or password")
 
-# Main function to run the app
 def main():
     if not st.session_state['logged_in']:
         cover_page()
