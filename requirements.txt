@@ -6,9 +6,3 @@ matplotlib
 nltk
 altair
 textblob
-requests
-beautifulsoup4
-selenium
-webdriver-manager
-pyppeteer
-nest_asyncio
