@@ -13,17 +13,8 @@ import altair as alt
 from collections import Counter
 from textblob import TextBlob
 import nltk
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.webdriver.firefox.service import Service as FirefoxService
-from selenium.webdriver.edge.service import Service as EdgeService
-from selenium.webdriver.safari.service import Service as SafariService
-from webdriver_manager.chrome import ChromeDriverManager
-from webdriver_manager.firefox import GeckoDriverManager
-from webdriver_manager.microsoft import EdgeChromiumDriverManager
-import platform
-import os
+import asyncio
+from pyppeteer import launch
 
 nltk.download('stopwords')
 
@@ -77,189 +68,6 @@ def app1():
     
     st.write("Note: Scraping reviews from certain websites may violate their terms of service. Use responsibly and ensure compliance with the website's policies.")
 
-# App 2: Review Labeling and Categorization App
-def app2():
-    st.title('Review Labeling and Categorization App')
-
-    uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
-
-    if uploaded_file is not None:
-        reviews_df = pd.read_csv(uploaded_file)
-
-        # Convert the 'Review' column to string data type
-        reviews_df['Review'] = reviews_df['Review'].astype(str)
-
-        # Apply the classify_review function to the 'Review' column
-        reviews_df['Label'] = reviews_df['Review'].apply(classify_review)
-
-        # Apply the categorize_review function to the 'Review' column
-        reviews_df['Category'] = reviews_df['Review'].apply(categorize_review)
-
-        # Display the labeled and categorized reviews
-        st.write(reviews_df)
-
-        # Allow the user to download the labeled and categorized reviews
-        download_csv(reviews_df, 'labeled_categorized_reviews.csv')
-    else:
-        st.write("Please upload a CSV file to get started.")
-
-# App 3: Text and Sentiment Preliminary Analysis
-def app3():
-    st.title('Text and Sentiment Preliminary Analysis')
-
-    # Load stopwords
-    stop_words = set(stopwords.words('english'))
-
-    # Sidebar for file upload and input parameters
-    st.sidebar.header("Upload CSV File")
-    uploaded_file = st.sidebar.file_uploader("Choose a CSV file", type="csv")
-    exclude_words = st.sidebar.text_input("Words to Exclude (comma separated)", "")
-    min_freq = st.sidebar.number_input("Minimum Frequency", value=2, min_value=1)
-    max_words = st.sidebar.number_input("Maximum Words", value=200, min_value=1)
-
-    # Function to clean text
-    def clean_text(text):
-        if isinstance(text, str):
-            text = text.lower()
-            text = ''.join([c for c in text if c not in ('!', '.', ':', ',', '?')])
-            return text
-        else:
-            return ""
-
-    # Function to analyze text data
-    def analyze_text(data, column):
-        data[column] = data[column].apply(clean_text)
-        words = ' '.join(data[column]).split()
-        words = [word for word in words if word not in stop_words]
-        if exclude_words:
-            exclude = exclude_words.split(',')
-            words = [word for word in words if word not in exclude]
-        return words
-
-    # Function to perform sentiment analysis
-    def sentiment_analysis(data, column):
-        data['sentiment'] = data[column].apply(lambda x: TextBlob(x).sentiment.polarity if x else 0)
-        data['sentiment_type'] = data['sentiment'].apply(lambda x: 'Positive' if x > 0 else ('Negative' if x < 0 else 'Neutral'))
-        return data
-
-    # Plot word cloud
-    def plot_wordcloud(words):
-        wordcloud = WordCloud(width=800, height=400, max_words=max_words, background_color='white').generate(' '.join(words))
-        plt.figure(figsize=(10, 5))
-        plt.imshow(wordcloud, interpolation='bilinear')
-        plt.axis('off')
-        st.pyplot(plt)
-
-    # Plot sentiment analysis
-    def plot_sentiment(data):
-        sentiment_counts = data['sentiment_type'].value_counts().reset_index()
-        sentiment_counts.columns = ['sentiment', 'count']
-        chart = alt.Chart(sentiment_counts).mark_bar().encode(
-            x='sentiment',
-            y='count',
-            color='sentiment'
-        ).properties(
-            title="Sentiment Analysis"
-        )
-        st.altair_chart(chart, use_container_width=True)
-
-    # Plot n-grams
-    def plot_ngrams(words, n):
-        n_grams = ngrams(words, n)
-        n_grams_freq = FreqDist(n_grams).most_common(50)
-        n_grams_df = pd.DataFrame(n_grams_freq, columns=['ngram', 'count'])
-        n_grams_df['ngram'] = n_grams_df['ngram'].apply(lambda x: ' '.join(x))
-        chart = alt.Chart(n_grams_df).mark_bar().encode(
-            x=alt.X('ngram', sort='-y'),
-            y='count',
-            tooltip=['ngram', 'count']
-        ).properties(
-            title=f"Top 50 {'Bigrams' if n == 2 else 'Trigrams'}"
-        )
-        st.altair_chart(chart, use_container_width=True)
-
-    # Plot top positive and negative words
-    def plot_top_words(data, sentiment):
-        words = data[data['sentiment_type'] == sentiment]['Review'].str.cat(sep=' ').split()
-        words = [word for word in words if word not in stop_words]
-        words_freq = Counter(words).most_common(20)
-        words_df = pd.DataFrame(words_freq, columns=['word', 'count'])
-        chart = alt.Chart(words_df).mark_bar().encode(
-            x=alt.X('word', sort='-y'),
-            y='count',
-            color=alt.value('green' if sentiment == 'Positive' else 'red')
-        ).properties(
-            title=f"Top 20 {sentiment} Words"
-        )
-        st.altair_chart(chart, use_container_width=True)
-
-    # Main panel for displaying analysis
-    if uploaded_file is not None:
-        data = pd.read_csv(uploaded_file)
-        if 'Review' in data.columns:
-            words = analyze_text(data, 'Review')
-            sentiment_data = sentiment_analysis(data, 'Review')
-
-            tab1, tab2, tab3, tab4, tab5 = st.tabs(["Word Cloud", "Text Analytics", "Sentiment Analysis", "N-grams", "Top Words"])
-
-            with tab1:
-                st.header("Word Cloud")
-                plot_wordcloud(words)
-
-            with tab2:
-                st.header("Text Analytics")
-                text_freq = pd.DataFrame(FreqDist(words).most_common(), columns=['word', 'count'])
-                st.dataframe(text_freq)
-
-            with tab3:
-                st.header("Sentiment Analysis")
-                plot_sentiment(sentiment_data)
-                st.dataframe(sentiment_data[['Review', 'sentiment', 'sentiment_type']])
-
-            with tab4:
-                st.header("N-grams")
-                plot_ngrams(words, 2)
-                plot_ngrams(words, 3)
-
-            with tab5:
-                st.header("Top Words")
-                plot_top_words(sentiment_data, 'Positive')
-                plot_top_words(sentiment_data, 'Negative')
-
-            # Download button
-            csv = sentiment_data.to_csv(index=False).encode('utf-8')
-            st.download_button("Download Results", data=csv, file_name="results.csv", mime="text/csv")
-        else:
-            st.error("The uploaded CSV file does not contain a 'Review' column.")
-    else:
-        st.info("Please upload a CSV file to analyze.")
-
-# App 4: Web-Based Review Scraper
-def app4():
-    st.title('Web-Based Review Scraper')
-    url = st.text_input('Enter the review page URL:')
-    num_reviews = st.slider('Number of reviews to scrape', 1, 1000, 100)
-    website = st.selectbox('Select website', ['Trustpilot', 'PissedConsumer', 'Yelp'])
-    browser = st.selectbox('Select browser', ['Chrome', 'Firefox', 'Edge', 'Safari'])
-
-    if st.button('Scrape Reviews'):
-        if website == 'Trustpilot':
-            reviews = scrape_trustpilot_reviews(url, num_reviews, browser)
-        elif website == 'PissedConsumer':
-            reviews = scrape_pissedconsumer_reviews(url, num_reviews, browser)
-        elif website == 'Yelp':
-            reviews = scrape_yelp_reviews(url, num_reviews, browser)
-
-        if reviews:
-            reviews_df = pd.DataFrame(reviews, columns=['Review'])
-            st.dataframe(reviews_df)
-            file_path = save_to_csv(reviews_df)
-            st.session_state['last_scraped_file'] = file_path
-            st.success(f"Scraped {len(reviews)} reviews and saved to {file_path}")
-        else:
-            st.error("Failed to scrape reviews.")
-
-# Helper Functions for App1
 def scrape_google_play(app_id, num_reviews=100, sort_order=Sort.NEWEST, min_rating=None, max_rating=None):
     all_reviews = []
     next_token = None
@@ -292,7 +100,32 @@ def fetch_google_play_app_details(app_id):
         'description': app_details['description']
     }
 
-# Helper Functions for App2
+# App 2: Review Labeling and Categorization App
+def app2():
+    st.title('Review Labeling and Categorization App')
+
+    uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+
+    if uploaded_file is not None:
+        reviews_df = pd.read_csv(uploaded_file)
+
+        # Convert the 'Review' column to string data type
+        reviews_df['Review'] = reviews_df['Review'].astype(str)
+
+        # Apply the classify_review function to the 'Review' column
+        reviews_df['Label'] = reviews_df['Review'].apply(classify_review)
+
+        # Apply the categorize_review function to the 'Review' column
+        reviews_df['Category'] = reviews_df['Review'].apply(categorize_review)
+
+        # Display the labeled and categorized reviews
+        st.write(reviews_df)
+
+        # Allow the user to download the labeled and categorized reviews
+        download_csv(reviews_df, 'labeled_categorized_reviews.csv')
+    else:
+        st.write("Please upload a CSV file to get started.")
+
 def classify_review(review):
     # Define keywords for each category
     process_keywords = [
@@ -439,117 +272,225 @@ def categorize_review(review):
     # If no keywords found, return "Unknown"
     return "Unknown"
 
-# Helper Functions for App4
-import os
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.webdriver.firefox.service import Service as FirefoxService
-from selenium.webdriver.edge.service import Service as EdgeService
-import platform
-import streamlit as st
+# App 3: Text and Sentiment Preliminary Analysis
+def app3():
+    st.title('Text and Sentiment Preliminary Analysis')
 
-def setup_driver(browser):
-    try:
-        driver_path = {
-            'Chrome': 'drivers/chromedriver',
-            'Firefox': 'drivers/geckodriver',
-            'Edge': 'drivers/msedgedriver'
-        }
+    # Load stopwords
+    stop_words = set(stopwords.words('english'))
 
-        if browser == 'Chrome':
-            options = webdriver.ChromeOptions()
-            options.add_argument("--headless")  # Run in headless mode
-            options.add_argument("--no-sandbox")
-            options.add_argument("--disable-dev-shm-usage")
-            service = ChromeService(executable_path=os.path.abspath(driver_path['Chrome']))
-            driver = webdriver.Chrome(service=service, options=options)
-        elif browser == 'Firefox':
-            options = webdriver.FirefoxOptions()
-            options.add_argument("--headless")  # Run in headless mode
-            service = FirefoxService(executable_path=os.path.abspath(driver_path['Firefox']))
-            driver = webdriver.Firefox(service=service, options=options)
-        elif browser == 'Edge':
-            options = webdriver.EdgeOptions()
-            options.add_argument("--headless")  # Run in headless mode
-            service = EdgeService(executable_path=os.path.abspath(driver_path['Edge']))
-            driver = webdriver.Edge(service=service, options=options)
-        elif browser == 'Safari' and platform.system() == 'Darwin':  # Check if macOS
-            driver = webdriver.Safari()  # SafariDriver is included with macOS
+    # Sidebar for file upload and input parameters
+    st.sidebar.header("Upload CSV File")
+    uploaded_file = st.sidebar.file_uploader("Choose a CSV file", type="csv")
+    exclude_words = st.sidebar.text_input("Words to Exclude (comma separated)", "")
+    min_freq = st.sidebar.number_input("Minimum Frequency", value=2, min_value=1)
+    max_words = st.sidebar.number_input("Maximum Words", value=200, min_value=1)
+
+    # Function to clean text
+    def clean_text(text):
+        if isinstance(text, str):
+            text = text.lower()
+            text = ''.join([c for c in text if c not in ('!', '.', ':', ',', '?')])
+            return text
         else:
-            raise ValueError("Unsupported browser or platform")
+            return ""
 
-        # Test if the driver is valid by getting a simple page
-        driver.get("http://www.google.com")
-        return driver
-    except Exception as e:
-        st.error(f"Error setting up the driver for {browser}: {str(e)}")
-        return None
+    # Function to analyze text data
+    def analyze_text(data, column):
+        data[column] = data[column].apply(clean_text)
+        words = ' '.join(data[column]).split()
+        words = [word for word in words if word not in stop_words]
+        if exclude_words:
+            exclude = exclude_words.split(',')
+            words = [word for word in words if word not in exclude]
+        return words
 
-def scrape_trustpilot_reviews(url, num_reviews=100, browser='Chrome'):
-    driver = setup_driver(browser)
-    if driver is None:
-        st.error(f"Failed to set up the driver for {browser}. Cannot scrape reviews.")
-        return []
-    driver.get(url)
+    # Function to perform sentiment analysis
+    def sentiment_analysis(data, column):
+        data['sentiment'] = data[column].apply(lambda x: TextBlob(x).sentiment.polarity if x else 0)
+        data['sentiment_type'] = data['sentiment'].apply(lambda x: 'Positive' if x > 0 else ('Negative' if x < 0 else 'Neutral'))
+        return data
+
+    # Plot word cloud
+    def plot_wordcloud(words):
+        wordcloud = WordCloud(width=800, height=400, max_words=max_words, background_color='white').generate(' '.join(words))
+        plt.figure(figsize=(10, 5))
+        plt.imshow(wordcloud, interpolation='bilinear')
+        plt.axis('off')
+        st.pyplot(plt)
+
+    # Plot sentiment analysis
+    def plot_sentiment(data):
+        sentiment_counts = data['sentiment_type'].value_counts().reset_index()
+        sentiment_counts.columns = ['sentiment', 'count']
+        chart = alt.Chart(sentiment_counts).mark_bar().encode(
+            x='sentiment',
+            y='count',
+            color='sentiment'
+        ).properties(
+            title="Sentiment Analysis"
+        )
+        st.altair_chart(chart, use_container_width=True)
+
+    # Plot n-grams
+    def plot_ngrams(words, n):
+        n_grams = ngrams(words, n)
+        n_grams_freq = FreqDist(n_grams).most_common(50)
+        n_grams_df = pd.DataFrame(n_grams_freq, columns=['ngram', 'count'])
+        n_grams_df['ngram'] = n_grams_df['ngram'].apply(lambda x: ' '.join(x))
+        chart = alt.Chart(n_grams_df).mark_bar().encode(
+            x=alt.X('ngram', sort='-y'),
+            y='count',
+            tooltip=['ngram', 'count']
+        ).properties(
+            title=f"Top 50 {'Bigrams' if n == 2 else 'Trigrams'}"
+        )
+        st.altair_chart(chart, use_container_width=True)
+
+    # Plot top positive and negative words
+    def plot_top_words(data, sentiment):
+        words = data[data['sentiment_type'] == sentiment]['Review'].str.cat(sep=' ').split()
+        words = [word for word in words if word not in stop_words]
+        words_freq = Counter(words).most_common(20)
+        words_df = pd.DataFrame(words_freq, columns=['word', 'count'])
+        chart = alt.Chart(words_df).mark_bar().encode(
+            x=alt.X('word', sort='-y'),
+            y='count',
+            color=alt.value('green' if sentiment == 'Positive' else 'red')
+        ).properties(
+            title=f"Top 20 {sentiment} Words"
+        )
+        st.altair_chart(chart, use_container_width=True)
+
+    # Main panel for displaying analysis
+    if uploaded_file is not None:
+        data = pd.read_csv(uploaded_file)
+        if 'Review' in data.columns:
+            words = analyze_text(data, 'Review')
+            sentiment_data = sentiment_analysis(data, 'Review')
+
+            tab1, tab2, tab3, tab4, tab5 = st.tabs(["Word Cloud", "Text Analytics", "Sentiment Analysis", "N-grams", "Top Words"])
+
+            with tab1:
+                st.header("Word Cloud")
+                plot_wordcloud(words)
+
+            with tab2:
+                st.header("Text Analytics")
+                text_freq = pd.DataFrame(FreqDist(words).most_common(), columns=['word', 'count'])
+                st.dataframe(text_freq)
+
+            with tab3:
+                st.header("Sentiment Analysis")
+                plot_sentiment(sentiment_data)
+                st.dataframe(sentiment_data[['Review', 'sentiment', 'sentiment_type']])
+
+            with tab4:
+                st.header("N-grams")
+                plot_ngrams(words, 2)
+                plot_ngrams(words, 3)
+
+            with tab5:
+                st.header("Top Words")
+                plot_top_words(sentiment_data, 'Positive')
+                plot_top_words(sentiment_data, 'Negative')
+
+            # Download button
+            csv = sentiment_data.to_csv(index=False).encode('utf-8')
+            st.download_button("Download Results", data=csv, file_name="results.csv", mime="text/csv")
+        else:
+            st.error("The uploaded CSV file does not contain a 'Review' column.")
+    else:
+        st.info("Please upload a CSV file to analyze.")
+
+async def scrape_trustpilot_reviews(url, num_reviews=100):
+    browser = await launch(headless=True)
+    page = await browser.newPage()
+    await page.goto(url)
+
     reviews = []
     try:
         while len(reviews) < num_reviews:
-            review_elements = driver.find_elements(By.CSS_SELECTOR, 'p.review-content__text')
+            review_elements = await page.querySelectorAll('p.review-content__text')
             for element in review_elements:
-                reviews.append(element.text.strip())
+                review_text = await page.evaluate('(element) => element.textContent', element)
+                reviews.append(review_text.strip())
                 if len(reviews) >= num_reviews:
                     break
-            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(2)  # Wait for new reviews to load
+            await page.evaluate('window.scrollTo(0, document.body.scrollHeight);')
+            await asyncio.sleep(2)  # Wait for new reviews to load
     finally:
-        driver.quit()
+        await browser.close()
     return reviews[:num_reviews]
 
-def scrape_pissedconsumer_reviews(url, num_reviews=100, browser='Chrome'):
-    driver = setup_driver(browser)
-    if driver is None:
-        st.error(f"Failed to set up the driver for {browser}. Cannot scrape reviews.")
-        return []
-    driver.get(url)
+async def scrape_pissedconsumer_reviews(url, num_reviews=100):
+    browser = await launch(headless=True)
+    page = await browser.newPage()
+    await page.goto(url)
+
     reviews = []
     try:
         while len(reviews) < num_reviews:
-            review_elements = driver.find_elements(By.CSS_SELECTOR, 'div.complaint-review p')
+            review_elements = await page.querySelectorAll('div.complaint-review p')
             for element in review_elements:
-                reviews.append(element.text.strip())
+                review_text = await page.evaluate('(element) => element.textContent', element)
+                reviews.append(review_text.strip())
                 if len(reviews) >= num_reviews:
                     break
-            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(2)  # Wait for new reviews to load
+            await page.evaluate('window.scrollTo(0, document.body.scrollHeight);')
+            await asyncio.sleep(2)  # Wait for new reviews to load
     finally:
-        driver.quit()
+        await browser.close()
     return reviews[:num_reviews]
 
-def scrape_yelp_reviews(url, num_reviews=100, browser='Chrome'):
-    driver = setup_driver(browser)
-    if driver is None:
-        st.error(f"Failed to set up the driver for {browser}. Cannot scrape reviews.")
-        return []
-    driver.get(url)
+async def scrape_yelp_reviews(url, num_reviews=100):
+    browser = await launch(headless=True)
+    page = await browser.newPage()
+    await page.goto(url)
+
     reviews = []
     try:
         while len(reviews) < num_reviews:
-            review_elements = driver.find_elements(By.CSS_SELECTOR, 'span.raw__373c0__3rKqk')
+            review_elements = await page.querySelectorAll('span.raw__373c0__3rKqk')
             for element in review_elements:
-                reviews.append(element.text.strip())
+                review_text = await page.evaluate('(element) => element.textContent', element)
+                reviews.append(review_text.strip())
                 if len(reviews) >= num_reviews:
                     break
-            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(2)  # Wait for new reviews to load
+            await page.evaluate('window.scrollTo(0, document.body.scrollHeight);')
+            await asyncio.sleep(2)  # Wait for new reviews to load
     finally:
-        driver.quit()
+        await browser.close()
     return reviews[:num_reviews]
 
+def scrape_reviews(url, num_reviews=100, site='Trustpilot'):
+    if site == 'Trustpilot':
+        reviews = asyncio.run(scrape_trustpilot_reviews(url, num_reviews))
+    elif site == 'PissedConsumer':
+        reviews = asyncio.run(scrape_pissedconsumer_reviews(url, num_reviews))
+    elif site == 'Yelp':
+        reviews = asyncio.run(scrape_yelp_reviews(url, num_reviews))
+    else:
+        reviews = []
+    if not reviews:
+        st.error(f"Failed to scrape reviews from {url}")
+    return reviews
 
-def save_to_csv(dataframe):
-    file_path = f'reviews_{int(time.time())}.csv'
-    dataframe.to_csv(file_path, index=False)
-    return file_path
+def app4():
+    st.title('Web-Based Review Scraper with Pyppeteer')
+
+    url = st.text_input('Enter the review page URL:')
+    num_reviews = st.slider('Number of reviews to scrape', 1, 1000, 100)
+    site = st.selectbox('Select website', ['Trustpilot', 'PissedConsumer', 'Yelp'])
+
+    if st.button('Scrape Reviews'):
+        reviews = scrape_reviews(url, num_reviews, site)
+        if reviews:
+            reviews_df = pd.DataFrame(reviews, columns=['Review'])
+            st.dataframe(reviews_df)
+            download_csv(reviews_df, 'web_reviews.csv')
+        else:
+            st.error("Failed to scrape reviews.")
 
 # Cover page with login
 def cover_page():
