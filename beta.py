@@ -14,7 +14,6 @@ from collections import Counter
 from textblob import TextBlob
 import nltk
 import plotly.express as px
-import base64
 
 nltk.download('stopwords')
 
@@ -36,14 +35,6 @@ def download_csv(data, filename):
         file_name=filename,
         mime='text/csv',
     )
-
-# Function to convert image to base64
-def get_base64_image(image_path):
-    with open(image_path, "rb") as img_file:
-        return base64.b64encode(img_file.read()).decode()
-
-# Base64 image
-base64_image = get_base64_image("loginpage.png")
 
 # App 1: Google Play Store Review Scraper
 def app1():
@@ -365,32 +356,22 @@ def app4():
 # Cover page with login
 def cover_page():
     st.markdown(
-        f"""
+        """
         <style>
-        .login-page {{
-            background-image: url("data:image/png;base64,{base64_image}") !important;
-            background-size: cover !important;
-            background-position: center !important;
-            height: 100vh !important;
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
-            flex-direction: column !important;
-            color: white !important;
-        }}
-        .login-form {{
+        .login-form {
             background: rgba(0, 0, 0, 0.5) !important; /* Darken the background slightly */
             padding: 20px !important;
             border-radius: 10px !important;
-        }}
+            text-align: center !important;
+        }
         </style>
         """,
         unsafe_allow_html=True
     )
-    st.markdown('<div class="login-page">', unsafe_allow_html=True)
     st.markdown('<div class="login-form">', unsafe_allow_html=True)
 
     st.title("Welcome to RevAI Fusion 360 💽")
+    st.image("https://github.com/skappal7/TextAnalyser/blob/main/logo.png?raw=true", width=200)
     st.subheader("Please login to continue")
 
     # Login form
@@ -404,7 +385,6 @@ def cover_page():
         else:
             st.error("Invalid username or password")
 
-    st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 # Main function to run the app
@@ -534,8 +514,8 @@ def classify_review(review):
         if keyword in review:
             return "People"
 
-    # If no keywords found, return "Unknown"
-    return "Unknown"
+    # If no keywords found, return "Other Area"
+    return "Other Area"
 
 def categorize_review(review):
     billing_keywords = ['invoice', 'payment', 'bill', 'charge', 'refund', 'credit', 'debit', 'balance', 'overdue', 'fee', 'statement', 'account', 'transaction', 'receipt', 'pay', 'finance', 'cost', 'expense', 'price', 'amount', 'due', 'overcharge', 'undercharge', 'billing cycle']
@@ -602,9 +582,8 @@ def categorize_review(review):
         if keyword in review:
             return "General Inquiry"
 
-    # If no keywords found, return "Unknown"
-    return "Unknown"
+    # If no keywords found, return "Unexplored Category"
+    return "Unexplored Category"
 
 if __name__ == '__main__':
     main()
-
