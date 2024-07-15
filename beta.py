@@ -369,11 +369,17 @@ def cover_page():
             flex-direction: column;
             color: white;
         }
+        .login-form {
+            background: rgba(0, 0, 0, 0.5); /* Darken the background slightly */
+            padding: 20px;
+            border-radius: 10px;
+        }
         </style>
         """,
         unsafe_allow_html=True
     )
     st.markdown('<div class="login-page">', unsafe_allow_html=True)
+    st.markdown('<div class="login-form">', unsafe_allow_html=True)
 
     st.title("Welcome to RevAI Fusion 360 💽")
     st.subheader("Please login to continue")
@@ -389,6 +395,7 @@ def cover_page():
         else:
             st.error("Invalid username or password")
 
+    st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 # Main function to run the app
@@ -518,8 +525,8 @@ def classify_review(review):
         if keyword in review:
             return "People"
 
-    # If no keywords found, return "Others"
-    return "Others"
+    # If no keywords found, return "Other Areas"
+    return "Other Areas"
 
 def categorize_review(review):
     billing_keywords = ['invoice', 'payment', 'bill', 'charge', 'refund', 'credit', 'debit', 'balance', 'overdue', 'fee', 'statement', 'account', 'transaction', 'receipt', 'pay', 'finance', 'cost', 'expense', 'price', 'amount', 'due', 'overcharge', 'undercharge', 'billing cycle']
@@ -586,8 +593,8 @@ def categorize_review(review):
         if keyword in review:
             return "General Inquiry"
 
-    # If no keywords found, return "Others"
-    return "Others"
+    # If no keywords found, return "Unexplored"
+    return "Unexplored"
 
 if __name__ == '__main__':
     main()
