@@ -6,3 +6,4 @@ matplotlib
 nltk
 altair
 textblob
+plotly
