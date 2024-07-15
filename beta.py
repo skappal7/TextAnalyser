@@ -509,12 +509,12 @@ def classify_review(review):
             return "Process"
 
     # Check for technology-related keywords
-    for keyword in technology keywords:
+    for keyword in technology_keywords:
         if keyword in review:
             return "Technology"
 
     # Check for people-related keywords
-    for keyword in people keywords:
+    for keyword in people_keywords:
         if keyword in review:
             return "People"
 
