@@ -518,8 +518,8 @@ def classify_review(review):
         if keyword in review:
             return "People"
 
-    # If no keywords found, return "Unknown"
-    return "Unknown"
+    # If no keywords found, return "Others"
+    return "Others"
 
 def categorize_review(review):
     billing_keywords = ['invoice', 'payment', 'bill', 'charge', 'refund', 'credit', 'debit', 'balance', 'overdue', 'fee', 'statement', 'account', 'transaction', 'receipt', 'pay', 'finance', 'cost', 'expense', 'price', 'amount', 'due', 'overcharge', 'undercharge', 'billing cycle']
@@ -537,57 +537,57 @@ def categorize_review(review):
     review = str(review).lower()
 
     # Check for billing-related keywords
-    for keyword in billing keywords:
+    for keyword in billing_keywords:
         if keyword in review:
             return "Billing and Payments"
 
     # Check for technical support-related keywords
-    for keyword in technical support keywords:
+    for keyword in technical_support_keywords:
         if keyword in review:
             return "Technical Support"
 
     # Check for account management-related keywords
-    for keyword in account management keywords:
+    for keyword in account_management_keywords:
         if keyword in review:
             return "Account Management"
 
     # Check for product information-related keywords
-    for keyword in product information keywords:
+    for keyword in product_information_keywords:
         if keyword in review:
             return "Product Information"
 
     # Check for service inquiry-related keywords
-    for keyword in service inquiry keywords:
+    for keyword in service_inquiry_keywords:
         if keyword in review:
             return "Service Inquiry"
 
     # Check for complaints and feedback-related keywords
-    for keyword in complaints feedback keywords:
+    for keyword in complaints_feedback_keywords:
         if keyword in review:
             return "Complaints and Feedback"
 
     # Check for sales and renewals-related keywords
-    for keyword in sales renewals keywords:
+    for keyword in sales_renewals_keywords:
         if keyword in review:
             return "Sales and Renewals"
 
     # Check for shipping and delivery-related keywords
-    for keyword in shipping delivery keywords:
+    for keyword in shipping_delivery_keywords:
         if keyword in review:
             return "Shipping and Delivery"
 
     # Check for returns and exchanges-related keywords
-    for keyword in returns exchanges keywords:
+    for keyword in returns_exchanges_keywords:
         if keyword in review:
             return "Returns and Exchanges"
 
     # Check for general inquiry-related keywords
-    for keyword in general inquiry keywords:
+    for keyword in general_inquiry_keywords:
         if keyword in review:
             return "General Inquiry"
 
-    # If no keywords found, return "Unknown"
-    return "Unknown"
+    # If no keywords found, return "Others"
+    return "Others"
 
 if __name__ == '__main__':
     main()
