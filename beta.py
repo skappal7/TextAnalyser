@@ -14,6 +14,7 @@ from collections import Counter
 from textblob import TextBlob
 import nltk
 import plotly.express as px
+import base64
 
 nltk.download('stopwords')
 
@@ -35,6 +36,14 @@ def download_csv(data, filename):
         file_name=filename,
         mime='text/csv',
     )
+
+# Function to convert image to base64
+def get_base64_image(image_path):
+    with open(image_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode()
+
+# Base64 image
+base64_image = get_base64_image("loginpage.png")
 
 # App 1: Google Play Store Review Scraper
 def app1():
@@ -356,10 +365,10 @@ def app4():
 # Cover page with login
 def cover_page():
     st.markdown(
-        """
+        f"""
         <style>
-        .login-page {
-            background-image: url("https://github.com/skappal7/TextAnalyser/blob/main/loginpage.png?raw=true") !important;
+        .login-page {{
+            background-image: url("data:image/png;base64,{base64_image}") !important;
             background-size: cover !important;
             background-position: center !important;
             height: 100vh !important;
@@ -368,12 +377,12 @@ def cover_page():
             align-items: center !important;
             flex-direction: column !important;
             color: white !important;
-        }
-        .login-form {
+        }}
+        .login-form {{
             background: rgba(0, 0, 0, 0.5) !important; /* Darken the background slightly */
             padding: 20px !important;
             border-radius: 10px !important;
-        }
+        }}
         </style>
         """,
         unsafe_allow_html=True
@@ -598,3 +607,4 @@ def categorize_review(review):
 
 if __name__ == '__main__':
     main()
+
