@@ -359,20 +359,20 @@ def cover_page():
         """
         <style>
         .login-page {
-            background-image: url("https://github.com/skappal7/TextAnalyser/blob/main/loginpage.png?raw=true");
-            background-size: cover;
-            background-position: center;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            color: white;
+            background-image: url("https://github.com/skappal7/TextAnalyser/blob/main/loginpage.png?raw=true") !important;
+            background-size: cover !important;
+            background-position: center !important;
+            height: 100vh !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            flex-direction: column !important;
+            color: white !important;
         }
         .login-form {
-            background: rgba(0, 0, 0, 0.5); /* Darken the background slightly */
-            padding: 20px;
-            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.5) !important; /* Darken the background slightly */
+            padding: 20px !important;
+            border-radius: 10px !important;
         }
         </style>
         """,
@@ -525,8 +525,8 @@ def classify_review(review):
         if keyword in review:
             return "People"
 
-    # If no keywords found, return "Other Areas"
-    return "Other Areas"
+    # If no keywords found, return "Unknown"
+    return "Unknown"
 
 def categorize_review(review):
     billing_keywords = ['invoice', 'payment', 'bill', 'charge', 'refund', 'credit', 'debit', 'balance', 'overdue', 'fee', 'statement', 'account', 'transaction', 'receipt', 'pay', 'finance', 'cost', 'expense', 'price', 'amount', 'due', 'overcharge', 'undercharge', 'billing cycle']
@@ -559,7 +559,7 @@ def categorize_review(review):
             return "Account Management"
 
     # Check for product information-related keywords
-    for keyword in product_information_keywordss:
+    for keyword in product_information_keywords:
         if keyword in review:
             return "Product Information"
 
@@ -593,8 +593,8 @@ def categorize_review(review):
         if keyword in review:
             return "General Inquiry"
 
-    # If no keywords found, return "Unexplored"
-    return "Unexplored"
+    # If no keywords found, return "Unknown"
+    return "Unknown"
 
 if __name__ == '__main__':
     main()
