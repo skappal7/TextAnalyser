@@ -355,11 +355,28 @@ def app4():
 
 # Cover page with login
 def cover_page():
+    st.markdown(
+        """
+        <style>
+        .login-page {
+            background-image: url("https://github.com/skappal7/TextAnalyser/blob/main/loginpage.png?raw=true");
+            background-size: cover;
+            background-position: center;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+    st.markdown('<div class="login-page">', unsafe_allow_html=True)
+
     st.title("Welcome to RevAI Fusion 360 💽")
     st.subheader("Please login to continue")
-
-    # Display the image from GitHub
-    st.image("https://raw.githubusercontent.com/your-github-username/your-repo-name/main/loginpage.png")
 
     # Login form
     username = st.text_input("Username")
@@ -372,11 +389,14 @@ def cover_page():
         else:
             st.error("Invalid username or password")
 
+    st.markdown('</div>', unsafe_allow_html=True)
+
 # Main function to run the app
 def main():
     if not st.session_state['logged_in']:
         cover_page()
     else:
+        st.sidebar.image("https://github.com/skappal7/TextAnalyser/blob/main/logo.png?raw=true", width=200)
         st.sidebar.title('Navigation')
         app_selection = st.sidebar.radio('Go to', ['Review Scraper', 'Review Labeler', 'Text2Insights', 'Sentiment Tree Map'])
 
@@ -489,12 +509,12 @@ def classify_review(review):
             return "Process"
 
     # Check for technology-related keywords
-    for keyword in technology_keywords:
+    for keyword in technology keywords:
         if keyword in review:
             return "Technology"
 
     # Check for people-related keywords
-    for keyword in people_keywords:
+    for keyword in people keywords:
         if keyword in review:
             return "People"
 
@@ -517,52 +537,52 @@ def categorize_review(review):
     review = str(review).lower()
 
     # Check for billing-related keywords
-    for keyword in billing_keywords:
+    for keyword in billing keywords:
         if keyword in review:
             return "Billing and Payments"
 
     # Check for technical support-related keywords
-    for keyword in technical_support_keywords:
+    for keyword in technical support keywords:
         if keyword in review:
             return "Technical Support"
 
     # Check for account management-related keywords
-    for keyword in account_management_keywords:
+    for keyword in account management keywords:
         if keyword in review:
             return "Account Management"
 
     # Check for product information-related keywords
-    for keyword in product_information_keywords:
+    for keyword in product information keywords:
         if keyword in review:
             return "Product Information"
 
     # Check for service inquiry-related keywords
-    for keyword in service_inquiry_keywords:
+    for keyword in service inquiry keywords:
         if keyword in review:
             return "Service Inquiry"
 
     # Check for complaints and feedback-related keywords
-    for keyword in complaints_feedback_keywords:
+    for keyword in complaints feedback keywords:
         if keyword in review:
             return "Complaints and Feedback"
 
     # Check for sales and renewals-related keywords
-    for keyword in sales_renewals_keywords:
+    for keyword in sales renewals keywords:
         if keyword in review:
             return "Sales and Renewals"
 
     # Check for shipping and delivery-related keywords
-    for keyword in shipping_delivery_keywords:
+    for keyword in shipping delivery keywords:
         if keyword in review:
             return "Shipping and Delivery"
 
     # Check for returns and exchanges-related keywords
-    for keyword in returns_exchanges_keywords:
+    for keyword in returns exchanges keywords:
         if keyword in review:
             return "Returns and Exchanges"
 
     # Check for general inquiry-related keywords
-    for keyword in general_inquiry_keywords:
+    for keyword in general inquiry keywords:
         if keyword in review:
             return "General Inquiry"
 
