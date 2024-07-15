@@ -559,7 +559,7 @@ def categorize_review(review):
             return "Account Management"
 
     # Check for product information-related keywords
-    for keyword in product_information_keywords:
+    for keyword in product_information_keywordss:
         if keyword in review:
             return "Product Information"
 
