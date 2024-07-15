@@ -17,6 +17,9 @@ import plotly.express as px
 
 nltk.download('stopwords')
 
+# Set page configuration
+st.set_page_config(page_title="RevAI Fusion 360", layout="wide")
+
 # Initialize session state
 if 'logged_in' not in st.session_state:
     st.session_state['logged_in'] = False
@@ -226,8 +229,6 @@ def app3():
 
 # App 4: Sentiment Tree Map
 def app4():
-    st.set_page_config(page_title="Sentiment Tree Map", layout="wide")
-
     st.markdown(
         """
         <style>
