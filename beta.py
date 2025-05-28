@@ -13,6 +13,7 @@ import altair as alt
 from collections import Counter
 from textblob import TextBlob
 import nltk
+nltk.download('punkt')
 import plotly.express as px
 
 nltk.download('stopwords')
