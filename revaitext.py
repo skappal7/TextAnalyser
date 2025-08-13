@@ -147,19 +147,33 @@ def app3():
         plt.axis('off')
         st.pyplot(plt)
 
-    # Plot sentiment analysis
-    def plot_sentiment(data):
-        sentiment_counts = data['sentiment_type'].value_counts().reset_index()
-        sentiment_counts.columns = ['sentiment', 'count']
-        chart = alt.Chart(sentiment_counts).mark_bar().encode(
-            x='sentiment',
-            y='count',
-            color='sentiment'
-        ).properties(
-            title="Sentiment Analysis"
-        )
-        st.altair_chart(chart, use_container_width=True)
+# Plot sentiment analysis with fixed colors (robust, case-insensitive)
+def plot_sentiment(data):
+    # Count sentiments
+    sentiment_counts = data['sentiment_type'].value_counts(dropna=False).reset_index()
+    sentiment_counts.columns = ['sentiment', 'count']
 
+    # Normalize labels to title case to avoid case mismatches
+    sentiment_counts['sentiment'] = sentiment_counts['sentiment'].astype(str).str.title()
+
+    # Assign literal colors per row (no Altair scale = no surprises)
+    color_map = {
+        'Positive': '#00C853',  # green
+        'Negative': '#E74C3C',  # red
+        'Neutral':  '#979797'   # gray (same neutral tone you used elsewhere)
+    }
+    sentiment_counts['color'] = sentiment_counts['sentiment'].map(color_map).fillna('#979797')
+
+    chart = alt.Chart(sentiment_counts).mark_bar().encode(
+        x=alt.X('sentiment:N', sort=['Positive', 'Neutral', 'Negative'], title='Sentiment'),
+        y=alt.Y('count:Q', title='Count'),
+        color=alt.Color('color:N', scale=None),  # use the exact hex colors
+        tooltip=['sentiment:N', 'count:Q']
+    ).properties(
+        title="Sentiment Analysis"
+    )
+
+    st.altair_chart(chart, use_container_width=True)
 
     # Plot n-grams
     def plot_ngrams(words, n):
