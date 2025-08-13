@@ -147,25 +147,18 @@ def app3():
         plt.axis('off')
         st.pyplot(plt)
 
-# Plot sentiment analysis with fixed colors
-def plot_sentiment(data):
-    sentiment_counts = data['sentiment_type'].value_counts().reset_index()
-    sentiment_counts.columns = ['sentiment', 'count']
-    
-    sentiment_colors = alt.Scale(
-        domain=['positive', 'neutral', 'negative'],
-        range=['green', 'grey', 'red']
-    )
-    
-    chart = alt.Chart(sentiment_counts).mark_bar().encode(
-        x=alt.X('sentiment', sort=['positive', 'neutral', 'negative']),
-        y='count',
-        color=alt.Color('sentiment', scale=sentiment_colors)
-    ).properties(
-        title="Sentiment Analysis"
-    )
-    
-    st.altair_chart(chart, use_container_width=True)
+    # Plot sentiment analysis
+    def plot_sentiment(data):
+        sentiment_counts = data['sentiment_type'].value_counts().reset_index()
+        sentiment_counts.columns = ['sentiment', 'count']
+        chart = alt.Chart(sentiment_counts).mark_bar().encode(
+            x='sentiment',
+            y='count',
+            color='sentiment'
+        ).properties(
+            title="Sentiment Analysis"
+        )
+        st.altair_chart(chart, use_container_width=True)
 
 
     # Plot n-grams
