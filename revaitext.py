@@ -380,7 +380,7 @@ def cover_page():
     password = st.text_input("Password", type="password")
 
     if st.button("Login"):
-        if username == "humach" and password == "password":
+        if username == "Admin" and password == "idontknow":
             st.success("Login successful!")
             st.session_state['logged_in'] = True
         else:
