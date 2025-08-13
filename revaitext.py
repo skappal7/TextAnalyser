@@ -297,8 +297,8 @@ def app4():
         )
 
     st.sidebar.header("Choose Sentiment Colors")
-    positive_color = st.sidebar.color_picker("Positive Sentiment Color", "#07B1FC")
-    negative_color = st.sidebar.color_picker("Negative Sentiment Color", "#FAAF3B")
+    positive_color = st.sidebar.color_picker("Positive Sentiment Color", "#00FF00")
+    negative_color = st.sidebar.color_picker("Negative Sentiment Color", "#FF0000")
     neutral_color = st.sidebar.color_picker("Neutral Sentiment Color", "#979797")
 
     sentiment_filter = st.sidebar.radio(
