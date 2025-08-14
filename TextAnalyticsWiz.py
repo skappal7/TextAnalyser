@@ -43,8 +43,17 @@ def process_uploaded_file(uploaded_file):
     """Process uploaded CSV or text file and return DataFrame with reviews"""
     try:
         if uploaded_file.type == "text/csv":
-            # Read CSV file
-            df = pd.read_csv(uploaded_file)
+            # Read CSV file with encoding detection
+            try:
+                df = pd.read_csv(uploaded_file, encoding='utf-8')
+            except UnicodeDecodeError:
+                # Try different encodings
+                uploaded_file.seek(0)  # Reset file pointer
+                try:
+                    df = pd.read_csv(uploaded_file, encoding='latin-1')
+                except UnicodeDecodeError:
+                    uploaded_file.seek(0)
+                    df = pd.read_csv(uploaded_file, encoding='cp1252')
             
             # Try to identify the review column
             review_columns = []
@@ -71,8 +80,17 @@ def process_uploaded_file(uploaded_file):
                     return None
                     
         elif uploaded_file.type == "text/plain":
-            # Read text file
-            content = uploaded_file.read().decode('utf-8')
+            # Read text file with encoding detection
+            try:
+                content = uploaded_file.read().decode('utf-8')
+            except UnicodeDecodeError:
+                # Try different encodings
+                uploaded_file.seek(0)  # Reset file pointer
+                try:
+                    content = uploaded_file.read().decode('latin-1')
+                except UnicodeDecodeError:
+                    uploaded_file.seek(0)
+                    content = uploaded_file.read().decode('cp1252')
             
             # Split by lines and treat each line as a review
             reviews = [line.strip() for line in content.split('\n') if line.strip()]
